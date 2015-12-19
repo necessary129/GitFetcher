@@ -42,6 +42,8 @@ httpd = None
 
 import config
 
+init_dir = os.getcwd()
+
 host = config.HOST
 port = config.PORT 
 
