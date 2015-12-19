@@ -26,9 +26,16 @@ import urllib.parse
 import socket
 import subprocess
 import sqlite3
+import datetime
 
-def connect_db():
-    return sqlite3.connect('repo.db')
+connect_db = lambda : sqlite3.connect('data.sqlite3')
+
+def init_db():
+    with connect_db() as f:
+        query = 'CREATE TABLE IF NOT EXISTS repo (name text, dir text)'
+        f.execute(query)
+
+init_db()
 
 httpd = None
 
@@ -46,30 +53,41 @@ gitend = [".github.com", ".cloud-ips.com"]
 def logger(fil):
     def log(string):
         with open(fil,'a') as f:
-            f.write(string+'\n')
+            f.write("[{0}] {1}\n".format(datetime.datetime.now(),string))
     return log
 
 messages = logger('messages.log')
 errors = logger('errors.log')
 verbose = logger('verbose.log')
 
-def pull(dir):
+def message(string):
+    messages(string)
+    verbose(string)
+
+def get_repo_dir(repo):
+    with connect_db() as s:
+        cursor = s.execute('SELECT dir from repo where name=?',[repo])
+        li = cursor.fetchall()
+    return li
+
+def pull(direct):
     success = True
     string = ''
     global init_dir
     commands = ["git fetch",
                 "git rebase --stat --preserve-merges"]
-
+    os.chdir(direct)
     for command in commands:
         child = subprocess.Popen(command.split(),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         (out, err) = child.communicate()
-        string += out+'\n'+err+'\n'
+        string += out+'\n'+err+'\n\n\n'
         ret = child.returncode
         if ret != 0:
             success = False
-    return (success,string)
+    os.chdir(init_dir)
+    return (success,string.strip())
 
 
 def main():
@@ -79,6 +97,22 @@ def main():
     httpd = HTTPServer(server_address, GitHandler)
     httpd.serve_forever()
 
+def process(form):
+    repo = form['repository']['full_name']
+    dirs = get_repo_dir(repo)
+    if not dirs:
+        message("No directory found for {0}".format(repo))
+        return
+    message("Directories found: Repo: '{0}' Directories: {1}".format(repo, ", ".join(dirs)))
+    for direct in dirs:
+        message("Pulling in {0}".format(direct))
+        ret, string = pull(direct)
+        if ret:
+            message("Pulling Completed successfully")
+        else:
+            message("Pulling failed")
+            verbose("Detailed:")
+            verbose(string)
 
 class GitHandler(BaseHTTPRequestHandler):
     def_res = """You aren't supposed to be here?
@@ -90,10 +124,10 @@ class GitHandler(BaseHTTPRequestHandler):
     def is_github(self):
         if not 'GitHub' in self.headers.get('User-agent',''):
             return False
-        resolved = socket.getfqdn(self.client_address[0])
         for start in gitli:
             if self.client_address[0].startswith(start):
                 return True
+        resolved = socket.getfqdn(self.client_address[0])
         for end in gitend:
             if resolved.endswith(end):
                 return True
@@ -137,12 +171,11 @@ class GitHandler(BaseHTTPRequestHandler):
             msg = 'Recieved Payload for the commit {0} of {1} by {2} ({3})'.format(
             form['head_commit']['id'],form['repository']['full_name'],
             form['head_commit']['committer']['username'],form['head_commit']['committer']['name'])
-            messages(msg)
-            verbose(msg)
+            message(msg)
+            process(form)
         else:
             msg = 'Recieved {0} event'.format(event)
-            messages(msg)
-            verbose(msg)
+            message(msg)
 
 
     def do_GET(self):
