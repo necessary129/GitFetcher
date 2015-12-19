@@ -27,6 +27,7 @@ import socket
 import subprocess
 import sqlite3
 import datetime
+import os
 
 connect_db = lambda : sqlite3.connect('data.sqlite3')
 
