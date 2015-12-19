@@ -86,7 +86,7 @@ def pull(direct):
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         (out, err) = child.communicate()
-        string += out+'\n'+err+'\n\n\n'
+        string += out.decode('utf8')+'\n'+err.decode('utf8')+'\n\n\n'
         ret = child.returncode
         if ret != 0:
             success = False
