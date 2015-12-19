@@ -68,7 +68,10 @@ def get_repo_dir(repo):
     with connect_db() as s:
         cursor = s.execute('SELECT dir from repo where name=?',[repo])
         li = cursor.fetchall()
-    return li
+    dirs = []
+    for x in li:
+        dirs.append(x[0])
+    return dirs
 
 def pull(direct):
     success = True
@@ -120,7 +123,7 @@ class GitHandler(BaseHTTPRequestHandler):
 
     unauth_res = """Are you sure you are GitHub, 'coz i don't think so
     Find a better job, don't annoy me, pls...""".encode('utf8')
-    server_version = 'GitHandler/0.2'
+    server_version = 'GitFetcher/0.2'
     def is_github(self):
         if not 'GitHub' in self.headers.get('User-agent',''):
             return False

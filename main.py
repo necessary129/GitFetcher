@@ -25,10 +25,14 @@ from time import sleep
 from threading import Thread
 import sys
 from io import StringIO
+import signal
 
 fl = os.path.abspath('GitFetcher.py')
 last_change = os.stat(fl).st_mtime
 aa = False
+
+def on_sig(*r):
+    sys.exit(0)
 
 def fork():
     child = os.fork()
@@ -52,6 +56,9 @@ def do_fork():
     os.dup2(fd, 1)
     os.dup2(fd, 2)
 
+if os.name =='posix':
+    do_fork()
+    signal.signal(signal.SIGHUP,on_sig)
 def check_change():
     while True:
         global last_change
