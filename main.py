@@ -59,6 +59,13 @@ def do_fork():
 if os.name =='posix':
     do_fork()
     signal.signal(signal.SIGHUP,on_sig)
+    with open('GitFetcher.pid','w') as f:
+        f.write(os.getpid())
+
+def at_ex():
+    os.remove('GitFetcher.pid')
+
+
 def check_change():
     while True:
         global last_change
