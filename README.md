@@ -8,4 +8,4 @@ First, copy `config.py.example` to `config.py` and make changes as you need. The
 
 ##Running Cronjob
 
-edit your cron job using `crontab -e`. then add the following line: `*/5 * * * * python3 \<path\>/cronjob.py --dir=\<path\>` and it's done! Now, the GitFetcher will automatically restart if it get is not running.
+edit your cron job using `crontab -e`. then add the following line: `*/5 * * * * python3 <path>/cronjob.py --dir=<path>` and it's done! Now, the GitFetcher will automatically restart if it is not running.
